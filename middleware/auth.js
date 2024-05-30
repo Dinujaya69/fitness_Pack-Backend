@@ -5,13 +5,11 @@ const ErrorResponse = require("../utils/errorResponse");
 exports.isAuthenticated = async (req, res, next) => {
   const token = req.cookies.accessToken; // Make sure the token name matches
 
-  // Make sure token exists
   if (!token) {
     return next(new ErrorResponse("Not authorized to access this route", 401));
   }
 
   try {
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
     req.user = await User.findById(decoded.id).select("-password");
     if (!req.user) {
@@ -23,7 +21,6 @@ exports.isAuthenticated = async (req, res, next) => {
   }
 };
 
-// Middleware for admin
 exports.isAdmin = (req, res, next) => {
   if (req.user.role !== "admin") {
     return next(new ErrorResponse("Access denied, you must be an admin", 401));
