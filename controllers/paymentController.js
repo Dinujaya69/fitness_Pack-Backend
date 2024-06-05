@@ -1,5 +1,6 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const Payment = require("../models/payment");
+const User = require("../models/users");
 
 exports.createCheckoutSession = async (req, res) => {
   const { plan, loggedUserId } = req.body;
@@ -43,9 +44,13 @@ exports.createCheckoutSession = async (req, res) => {
     res.status(500).json({ error: "Unable to process payment" });
   }
 };
+
 exports.getAllPayments = async (req, res) => {
   try {
-    const payments = await Payment.find();
+    const payments = await Payment.find()
+      .populate("customerId", "-password") // Populate user details except password
+      .populate("planId"); // Populate plan details
+
     res.json({ payments });
   } catch (error) {
     console.error("Error fetching payments:", error);
@@ -72,27 +77,89 @@ exports.getPaymentDetails = async (req, res) => {
   }
 };
 
-// Controller function to fetch the last payment details of the logged-in user
 exports.getLastPayment = async (req, res) => {
   try {
-    
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    // Find the last payment made by the logged-in user
     const lastPayment = await Payment.findOne({ customerId: req.user._id })
-      .sort({ createdAt: -1 }) 
+      .sort({ createdAt: -1 })
       .populate("planId");
 
     if (!lastPayment) {
       return res.status(404).json({ message: "No payment found" });
     }
 
-    // Send the last payment details as response
     res.status(200).json(lastPayment);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+exports.updatePaymentStatus = async (req, res) => {
+  const { paymentId, status } = req.body;
+
+  if (!["pending", "completed", "failed"].includes(status)) {
+    return res.status(400).json({ error: "Invalid status" });
+  }
+
+  try {
+    const payment = await Payment.findById(paymentId);
+
+    if (!payment) {
+      return res.status(404).json({ error: "Payment not found" });
+    }
+
+    payment.status = status;
+    await payment.save();
+
+    res.status(200).json({ message: "Payment status updated successfully" });
+  } catch (error) {
+    console.error("Error updating payment status:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+
+
+exports.getUserWithPlanDetails = async (req, res) => {
+  try {
+    const users = await User.find({ role: "member" }).lean();
+
+    const usersWithPlanDetails = await Promise.all(
+      users.map(async (user) => {
+        const payment = await Payment.findOne({ customerId: user._id })
+          .sort({ createdAt: -1 })
+          .populate("planId");
+
+        return {
+          ...user,
+          planDetails: payment ? payment.planId : null,
+        };
+      })
+    );
+
+    res.json(usersWithPlanDetails);
+  } catch (error) {
+    console.error("Error fetching users with plan details:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+exports.deletePayment = async (req, res) => {
+  const { paymentId } = req.params;
+
+  try {
+    const payment = await Payment.findByIdAndDelete(paymentId);
+
+    if (!payment) {
+      return res.status(404).json({ message: "Payment not found" });
+    }
+
+    res.status(200).json({ message: "Payment deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting payment:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };

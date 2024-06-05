@@ -14,4 +14,10 @@ router.get(
   authController.profile
 );
 
+router.post(
+  "/registerTrainer",
+  upload.single("image"),
+  authController.registerTrainer
+);
+
 module.exports = router;

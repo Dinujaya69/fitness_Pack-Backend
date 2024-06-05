@@ -1,7 +1,7 @@
-module.exports ={
-    roles: {
-        admin: 'admin',
-        member: 'member',
-        trainer: 'trainer',
-    }
-}
+module.exports = {
+  roles: {
+    admin: "admin",
+    member: "member",
+    trainer: "trainer",
+  },
+};

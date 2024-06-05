@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const Schema = mongoose.Schema; //Add this line to import Schema
+const Schema = mongoose.Schema; // Import Schema from mongoose
 
 const userSchema = new Schema(
   {
@@ -18,11 +18,11 @@ const userSchema = new Schema(
     email: {
       type: String,
       required: true,
-      unique: true,
     },
     password: {
       type: String,
       required: true,
+      unique: true,
     },
     phone: {
       type: String,
@@ -38,13 +38,17 @@ const userSchema = new Schema(
     },
     role: {
       type: String,
-      enum: ["member", "admin"],
+      enum: ["member", "admin", "trainer"],
       default: "member",
     },
     verificationCode: {
       type: Number,
     },
     isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verified: {
       type: Boolean,
       default: false,
     },
@@ -57,6 +61,7 @@ const userSchema = new Schema(
     timestamps: true,
   }
 );
+
 // Static method to perform aggregation lookup
 userSchema.statics.getUserWithPlan = function (userId) {
   return this.aggregate([
@@ -72,4 +77,5 @@ userSchema.statics.getUserWithPlan = function (userId) {
     { $unwind: "$planDetails" }, // Assuming each user has only one plan
   ]);
 };
+
 module.exports = mongoose.model("User", userSchema);

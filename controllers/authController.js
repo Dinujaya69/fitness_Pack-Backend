@@ -3,6 +3,9 @@ const bcrypt = require("bcrypt");
 const User = require("../models/users");
 const ErrorResponse = require("../utils/errorResponse");
 
+const sendEmail = require("../utils/sendEmail");
+
+// Route for registering members and admins
 exports.register = async (req, res) => {
   try {
     const { name, gender, email, password, age, phone, address, selectedPlan } =
@@ -11,15 +14,9 @@ exports.register = async (req, res) => {
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    let role = "member";
+    let role = "member"; // Default role is member
     if (email === "admin@gmail.com") {
-      role = "admin";
-    }
-
-    let selectedPlanDetails = null;
-    if (selectedPlan) {
-      // Assuming selectedPlan is an object containing plan details
-      selectedPlanDetails = selectedPlan; 
+      role = "admin"; // Set role to admin if email is admin@gmail.com
     }
 
     const newUser = new User({
@@ -30,16 +27,22 @@ exports.register = async (req, res) => {
       age,
       phone,
       address,
-      selectedPlan: selectedPlanDetails, // Assigning the plan details directly
+      selectedPlan,
       image: req.file ? req.file.path : "",
       role,
     });
 
     await newUser.save();
 
+    // Send registration successful email
+    const subject = "Registration Successful";
+    const text = `Hello ${name},\n\nYour registration was successful. Welcome to Fitness Pack!\n\nBest regards,\nTeam`;
+
+    await sendEmail(email, subject, text);
+
     res.status(201).json({
       success: true,
-      message: "User successfully registered",
+      message: "User registered successfully and email sent.",
     });
   } catch (error) {
     console.error("Error registering user:", error);
@@ -129,6 +132,54 @@ exports.profile = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch profile. Please try again later.",
+      error: error.message,
+    });
+  }
+};
+
+// Route for registering trainers
+exports.registerTrainer = async (req, res) => {
+  try {
+    const { name, gender, email, password, age, phone, address, selectedPlan } =
+      req.body;
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Append "tr" to the beginning of the email
+    const trainerEmail = "tr" + email;
+
+    const newUser = new User({
+      name,
+      gender,
+      email: trainerEmail, // Save modified email with "tr" prefix
+      password: hashedPassword,
+      age,
+      phone,
+      address,
+      selectedPlan,
+      image: req.file ? req.file.path : "",
+      role: "trainer", // Set role to "trainer"
+    });
+
+    await newUser.save();
+
+    // Send registration successful email
+    const subject = "Registration Successful";
+    const text = `Hello ${name},\n\nYour registration as a trainer was successful. Welcome to Fitness Pack!\n\nBest regards,\nTeam
+    <p> Your Fitness Pack Trainer Email is : ${trainerEmail} (use for login)`;
+
+    await sendEmail(email, subject, text);
+
+    res.status(201).json({
+      success: true,
+      message: "Trainer registered successfully and email sent.",
+    });
+  } catch (error) {
+    console.error("Error registering trainer:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to register trainer. Please try again later.",
       error: error.message,
     });
   }

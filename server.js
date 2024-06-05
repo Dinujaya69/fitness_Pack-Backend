@@ -6,11 +6,12 @@ const cors = require("cors");
 require("dotenv").config();
 const authRoutes = require("./routes/authRouter");
 const userRoutes = require("./routes/userRouter");
-//const verifyRoutes = require("./routes/verifyRoutes");
 const paymentRoutes = require("./routes/paymentRouter");
 const planRoutes = require("./routes/planRouter");
 const attendanceRouter = require("./routes/attendenceRouter");
+const reportRoutes = require("./routes/reportRouter");
 const uploadRoutes = require("./routes/uploadRouter");
+const reviewRouter = require("./routes/reviewRouter");
 const stripe = require("stripe")(
   "sk_test_51PJx5nSCawkqcSvpc3WnMRqsOX8ZbbTR5WZRGiL5YTfam2DeDjiONfo1DRxdjujmsiMJM5UkfpxvfKLvmjvcSiRD001RHxmnO9"
 );
@@ -42,7 +43,6 @@ connection.once("open", () => {
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
-//app.use("/api/verify", verifyRoutes);
 
 app.use("/api/plan", planRoutes);
 
@@ -51,6 +51,10 @@ app.use("/api/attendance", attendanceRouter);
 app.use("/api/payment", paymentRoutes);
 
 app.use("/api/upload", uploadRoutes);
+
+app.use("/api/reports", reportRoutes);
+
+app.use("/api/review", reviewRouter);
 
 // Static images folder
 app.use("/Images", express.static("./images"));
